@@ -1,67 +1,125 @@
-## 超星学习通自动签到
-原作者https://www.bilibili.com/video/av94208525 
+# wxcloudrun-django
+[![GitHub license](https://img.shields.io/github/license/WeixinCloud/wxcloudrun-express)](https://github.com/WeixinCloud/wxcloudrun-express)
+![GitHub package.json dependency version (prod)](https://img.shields.io/badge/python-3.7.3-green)
 
-云函数完整食用方法https://yuban10703.xyz/archives/527  
-有问题直接issue提,别在blog写.....  
-<!-- 填上账号密码运行运行就好了,别忘记装模块   -->
-支持学习通的所有签到  
-支持server酱推送  
-能自定义照片,地址以及名字  
-用screen后台挂住就好了,断网的话可能会boom(一般不会断网⑧..)  
-## 配置文件
-1. "username":手机号 
-2. "passwd":密码
-3. "SCKEY":server酱的key
-4. "name":老师那里显示的名字,无特殊需要默认就行
-5. "address":地址信息
-6. "latitude":经度,同上
-7. "longitude":纬度,同上
-8. "picname":同目录的图片名字
-## 本地使用教程
-1. python3环境
-2. 安装模块: pip install requests
-3. 在同目录下的conf.json中写入配置
-4. 双击运行...
-## 云函数使用教程
-1. 去腾讯云创建一个云函数,目前测试广州好像不能用.其他地区可以.
-2. 环境选择`Python 3.6`
-3. 内存最低实测`64M`可以跑.
-4. 时间看个人课程数量.详细解释看下面
-5. 测试运行,成功后设定定时触发.关于如何设定Cron也可以看下面
+微信云托管 python Django 框架模版，实现简单的计数器读写接口，使用云托管 MySQL 读写、记录计数值。
 
-#### 关于时间设定
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
+![](https://qcloudimg.tencent-cloud.cn/raw/be22992d297d1b9a1a5365e606276781.png)
 
-在`Serverless`版里面,所有课程扫描/签到一次就会停止,这样做是为了符合云函数的设计,同时也节省运行时间.  
-最简单的估算办法就是:
-* 签到或扫描的请求撑死不会超过2S,记为`x`
-* 中间等待时间由`account.json`决定,记为`y`
-* 课程数量,记为`z`
-那么最后总时间应该是:   
-$$z*(x+y)$$
 
-绝大多数情况下这个请求时间可以直接忽略.
+## 快速开始
+前往 [微信云托管快速开始页面](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/basic/guide.html)，选择相应语言的模板，根据引导完成部署。
 
-再懒人一点的话,可以直接在命令行运行并统计时间,参考Linux命令`time` 
+## 本地调试
+下载代码在本地调试，请参考[微信云托管本地调试指南](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/guide/debug/)
 
-#### 关于Cron设定
-我们先来看一个例子
+## 实时开发
+代码变动时，不需要重新构建和启动容器，即可查看变动后的效果。请参考[微信云托管实时开发指南](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/guide/debug/dev.html)
+
+## Dockerfile最佳实践
+请参考[如何提高项目构建效率](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/scene/build/speed.html)
+
+
+## 目录结构说明
+~~~
+.
+├── Dockerfile                  dockerfile
+├── README.md                   README.md文件
+├── container.config.json       模板部署「服务设置」初始化配置（二开请忽略）
+├── manage.py                   django项目管理文件 与项目进行交互的命令行工具集的入口
+├── requirements.txt            依赖包文件
+└── wxcloudrun                  app目录
+    ├── __init__.py             python项目必带  模块化思想
+    ├── apps.py                 自动生成文件apps.py
+    ├── asgi.py                 自动生成文件asgi.py, 异步服务网关接口
+    ├── migrations              数据移植（迁移）模块
+    ├── models.py               数据模块
+    ├── settings.py             项目的总配置文件  里面包含数据库 web应用 日志等各种配置
+    ├── templates               模版目录,包含主页index.html文件
+    ├── urls.py                 URL配置文件  Django项目中所有地址中（页面）都需要我们自己去配置其URL
+    ├── views.py                执行响应的代码所在模块  代码逻辑处理主要地点  项目大部分代码在此编写
+    └── wsgi.py                 自动生成文件wsgi.py, Web服务网关接口
+~~~
+
+
+## 服务 API 文档
+
+### `GET /api/count`
+
+获取当前计数
+
+#### 请求参数
+
+无
+
+#### 响应结果
+
+- `code`：错误码
+- `data`：当前计数值
+
+##### 响应结果示例
+
+```json
+{
+  "code": 0,
+  "data": 42
+}
+```
+
+#### 调用示例
 
 ```
-0 */10 8-12,14-18 * * 1-5
+curl https://<云托管服务域名>/api/count
 ```
 
-云函数的Cron跟Linux Cron非常相似,不过左边多了一个秒.  
-以上Cron可以解释为: 
+
+
+### `POST /api/count`
+
+更新计数，自增或者清零
+
+#### 请求参数
+
+- `action`：`string` 类型，枚举值
+  - 等于 `"inc"` 时，表示计数加一
+  - 等于 `"clear"` 时，表示计数重置（清零）
+
+##### 请求参数示例
 
 ```
-0 */10 8-12,14-18 * * 1-5
-| |    |          | |  |
-| |    |          | |  .------- 在周几     (周一到周五)
-| |    |          | .---------- 在哪个月   (所有)  
-| |    |          .------------ 在哪一天   (所有)
-| |    .----------------------- 在几点     (8-12和14-18) 
-| .---------------------------- 在第几分钟 (每隔10分钟)
-.------------------------------ 在第几秒   (第0秒)
+{
+  "action": "inc"
+}
 ```
-这是比较符合现在上课的情况的Cron,各位也可以根据这个列表进行自定义
+
+#### 响应结果
+
+- `code`：错误码
+- `data`：当前计数值
+
+##### 响应结果示例
+
+```json
+{
+  "code": 0,
+  "data": 42
+}
+```
+
+#### 调用示例
+
+```
+curl -X POST -H 'content-type: application/json' -d '{"action": "inc"}' https://<云托管服务域名>/api/count
+```
+
+## 使用注意
+如果不是通过微信云托管控制台部署模板代码，而是自行复制/下载模板代码后，手动新建一个服务并部署，需要在「服务设置」中补全以下环境变量，才可正常使用，否则会引发无法连接数据库，进而导致部署失败。
+- MYSQL_ADDRESS
+- MYSQL_PASSWORD
+- MYSQL_USERNAME
+以上三个变量的值请按实际情况填写。如果使用云托管内MySQL，可以在控制台MySQL页面获取相关信息。
+
+
+## License
+
+[MIT](./LICENSE)
